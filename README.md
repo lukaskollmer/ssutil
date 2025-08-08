@@ -12,12 +12,15 @@ place iOS simulator screenshots in device bezels
 
 
 ```
-USAGE: ssutil [--device <device>] [--in-place] [<files> ...]
+USAGE: ssutil --bezels <bezels> [--color <color>] [--in-place] [--output <output>] [<files> ...]
 
 ARGUMENTS:
   <files>                 input files
 
 OPTIONS:
-  --device <device>       The device type to use (default: iPhone 16 Pro)
+  --bezels <bezels>       bezel files downloaded from apple
+  --color <color>         device color
   --in-place              override input files in-place
+  --output <output>       output directory
   -h, --help              Show help information.
+```
