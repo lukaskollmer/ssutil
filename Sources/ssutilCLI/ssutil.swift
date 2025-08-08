@@ -15,6 +15,9 @@ import SSUtilLib
 let logger = Logger(subsystem: "de.lukaskollmer.ssutil", category: "main")
 
 
+extension Device: ExpressibleByArgument {}
+
+
 @main
 struct ssutil: ParsableCommand {
     @Option(name: .customLong("bezels"), help: "bezel files downloaded from apple")

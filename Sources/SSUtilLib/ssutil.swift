@@ -6,7 +6,6 @@
 //  Copyright © 2025 Lukas Kollmer. All rights reserved.
 //
 
-import ArgumentParser
 import Foundation
 import OSLog
 
@@ -23,7 +22,7 @@ struct CommandError: Swift.Error {
 }
 
 
-public enum Device: String, RawRepresentable, CaseIterable, ExpressibleByArgument {
+public enum Device: String, RawRepresentable, CaseIterable {
     case iPhone16 = "iPhone 16"
     case iPhone16Plus = "iPhone 16 Plus"
     case iPhone16Pro = "iPhone 16 Pro"
