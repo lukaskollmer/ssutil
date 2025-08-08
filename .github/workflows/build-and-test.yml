@@ -21,18 +21,18 @@ concurrency:
 
 jobs:
   package_tests:
-    name: Build and Test Swift Package macOS
+    name: Build and Test Swift Package
     uses: StanfordBDHG/.github/.github/workflows/xcodebuild-or-fastlane.yml@v2
     with:
-      scheme: SSUtil-Package
+      scheme: ssutil-Package
       destination: 'platform=macOS,name=My Mac'
-      resultBundle: 'SSUtil-Package-macOS.xcresult'
-      artifactname: 'SSUtil-Package-macOS.xcresult'
+      resultBundle: 'ssutil-Package-macOS.xcresult'
+      artifactname: 'ssutil-Package-macOS.xcresult'
   uploadcoveragereport:
     name: Upload Coverage Report
     needs: [package_tests]
     uses: StanfordBDHG/.github/.github/workflows/create-and-upload-coverage-report.yml@v2
     with:
-      coveragereports: SSUtil-Package-macOS.xcresult
+      coveragereports: ssutil-Package-macOS.xcresult
     secrets:
       token: ${{ secrets.CODECOV_TOKEN }}
