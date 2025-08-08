@@ -13,4 +13,4 @@ path = [
     "Tests/SSUtilLibTests/Resources/bezels**"
 ]
 SPDX-FileCopyrightText = "Apple Inc"
-SPDX-License-Identifier = "ADRL"
+SPDX-License-Identifier = "LicenseRef-ADRL"
