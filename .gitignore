@@ -1,3 +1,11 @@
+#
+# This source file is part of the ssutil open-source project
+#
+# SPDX-FileCopyrightText: 2025 Lukas Kollmer
+#
+# SPDX-License-Identifier: MIT
+#
+
 # Swift Package Manager
 Package.resolved
 *.xcodeproj
