@@ -13,7 +13,7 @@ import CoreGraphics
 import Foundation
 
 
-private struct BezelFrame {
+struct BezelFrame {
     let canvasSize: CGSize
     let top: ClosedRange<Int>
     let bottom: ClosedRange<Int>
@@ -40,32 +40,78 @@ private struct BezelFrame {
 }
 
 
+
+struct Input {
+    enum Orientation: String {
+        case portrait = "Portrait"
+        case landscape = "Landscape"
+    }
+    
+    let srcUrl: URL
+    let nsImage: NSImage
+    let cgImage: CGImage
+//    let bezelFrame: BezelFrame
+    let device: Device
+    
+    var orientation: Orientation {
+        cgImage.width < cgImage.height ? .portrait : .landscape
+    }
+    
+    init(srcUrl: URL) throws {
+        self.srcUrl = srcUrl
+        self.nsImage = try NSImage(contentsOf: srcUrl).expect("Unable to read NSImage")
+        self.cgImage = try nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil).expect("Unable to create CGImage")
+        self.device = try Self.extractDevice(from: srcUrl).expect("Unable to parse device type from input filename")
+    }
+    
+    private static func extractDevice(from url: URL) -> Device? {
+        let filename = url.lastPathComponent
+        let filenameComponents = filename.split(separator: " - ")
+        return Device(rawValue: String(filenameComponents[1]))
+    }
+}
+
+
+
 extension ssutil {
-    func process(_ fileUrl: URL) throws {
-        print(fileUrl.resolvingSymlinksInPath().absoluteURL.resolvingSymlinksInPath().path)
-        let deviceImageUrl = URL(filePath: "/Users/lukas/temp/bezels/PNG/iPhone 16 Pro Max/iPhone 16 Pro Max - Black Titanium - Portrait.png")
+    func process(_ input: Input) throws {
+        let image = try makeImage(input)
+        let dstUrl = if inPlace {
+            input.srcUrl
+        } else if let outputDir {
+            outputDir.appendingPathComponent(input.srcUrl.deletingPathExtension().lastPathComponent, conformingTo: .png)
+        } else {
+            input.srcUrl
+                .deletingLastPathComponent()
+                .appendingPathComponent("\(input.srcUrl.deletingPathExtension().lastPathComponent)+bezel", conformingTo: .png)
+        }
+        try image.writePNG(to: dstUrl)
+    }
+    
+    
+    private func makeImage(_ input: Input) throws -> NSImage {
+        guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) else {
+            throw CommandError("Unable to create CGColorSpace")
+        }
         
-        guard let deviceImage = NSImage(contentsOf: deviceImageUrl),
-              let deviceCGImage = deviceImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+        let bezelImageUrl = bezelsDir
+            .appendingPathComponent(input.device.rawValue, isDirectory: true)
+            .appendingPathComponent("\(input.device.rawValue) - \(color ?? input.device.defaultColor) - \(input.orientation.rawValue)", conformingTo: .png)
+        precondition(FileManager.default.fileExists(atPath: bezelImageUrl.absoluteURL.path))
+          
+        guard let bezelImage = NSImage(contentsOf: bezelImageUrl),
+              let bezelCGImage = bezelImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
             throw CommandError("Unable to open device bezel file")
         }
         
         let overallFrame = CGRect(
             origin: .zero,
             // using the CGImage here since that takes the scale into account.
-            size: .init(width: deviceCGImage.width, height: deviceCGImage.height)
+            size: .init(width: bezelCGImage.width, height: bezelCGImage.height)
         )
         
-        let bezelFrame = try Self.locateBezelFrame(in: deviceImage)
+        let bezelFrame = try Self.locateBezelFrame(in: bezelImage)
         
-        guard let screenshotImage = NSImage(contentsOf: fileUrl),
-              let screenshotCGImage = screenshotImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
-            throw CommandError("Unable to open screenshot image file")
-        }
-        
-        guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) else {
-            throw CommandError("Unable to create CGColorSpace")
-        }
         guard let context = CGContext(
             data: nil,
             width: Int(overallFrame.width),
@@ -78,23 +124,19 @@ extension ssutil {
             throw CommandError("Unable to create CGContext")
         }
         
-        let screenshotMask = try Self.makeMask(for: screenshotCGImage, from: deviceCGImage, bezelFrame: bezelFrame)
-        context.draw(screenshotCGImage.masking(screenshotMask)!, in: bezelFrame.innerFrame)
-        context.draw(deviceCGImage, in: overallFrame)
+        let screenshotMask = try Self.makeMask(for: input.cgImage, from: bezelCGImage, bezelFrame: bezelFrame)
+        context.draw(input.cgImage.masking(screenshotMask)!, in: bezelFrame.innerFrame)
+        context.draw(bezelCGImage, in: overallFrame)
         
         guard let resultCGImage = context.makeImage() else {
             throw CommandError("Unable to make result CGImage")
         }
         let resultImage = NSImage(cgImage: resultCGImage, size: overallFrame.size)
-        let dstUrl = fileUrl.deletingLastPathComponent().appendingPathComponent(
-            fileUrl.deletingPathExtension().lastPathComponent + "+bezel",
-            conformingTo: .png
-        )
-        try resultImage.writePNG(to: dstUrl)
+        return resultImage
     }
     
     
-    private static func locateBezelFrame(in bezelImage: NSImage) throws -> BezelFrame {
+    fileprivate static func locateBezelFrame(in bezelImage: NSImage) throws -> BezelFrame {
         guard let tiff = bezelImage.tiffRepresentation,
               let bitmap = NSBitmapImageRep(data: tiff) else {
             throw CommandError("Unable to get bezel bitmap")
@@ -206,52 +248,5 @@ extension ssutil {
             }
         }
         return deviceImageBitmap.cgImage!.cropping(to: screenFrame)!.createMask()!
-    }
-}
-
-
-extension NSImage {
-    func writePNG(to dstUrl: URL) throws {
-        guard let tiff = self.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiff),
-              let png = bitmap.representation(using: .png, properties: [:]) else {
-            throw CommandError("Unable to get PNG representation")
-        }
-        try png.write(to: dstUrl)
-    }
-}
-
-
-extension CGImage {
-    func writePNG(to dstUrl: URL) throws {
-        try NSImage(
-            cgImage: self,
-            size: .init(width: self.width, height: self.height)
-        ).writePNG(to: dstUrl)
-    }
-    
-    
-    func createMask() -> CGImage? {
-        let rect = CGRect(x: 0, y: 0, width: width, height: height)
-        guard let colorSpace = CGColorSpace(name: CGColorSpace.genericGrayGamma2_2) else {
-            return nil
-        }
-        guard let context = CGContext(
-            data: nil,
-            width: width,
-            height: height,
-            bitsPerComponent: 8,
-            bytesPerRow: 0,
-            space: colorSpace,
-            bitmapInfo: CGImageAlphaInfo.none.rawValue
-        ) else {
-            return nil
-        }
-        context.setFillColor(gray: 1.0, alpha: 1.0)
-        context.fill(rect)
-        context.clip(to: rect, mask: self)
-        context.setFillColor(gray: 0.0, alpha: 1.0)
-        context.fill(rect)
-        return context.makeImage()
     }
 }
