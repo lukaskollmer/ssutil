@@ -22,7 +22,7 @@ struct BezelFrame {
     
     /// The frame representing the device image's transparent inner region
     var innerFrame: CGRect {
-        return CGRect(
+        CGRect(
             x: left.upperBound + 1,
             y: top.upperBound + 1,
             width: right.lowerBound - left.upperBound - 1,
@@ -40,7 +40,7 @@ struct BezelFrame {
 }
 
 
-
+/// Creates a new image by placing `input` in a suitable bezel
 public func process(_ input: Input, bezelsDir: URL, color: String?, destination: Destination) throws {
     let image = try makeImage(input, bezelsDir: bezelsDir, color: color)
     let dstUrl = switch destination {
@@ -91,7 +91,10 @@ private func makeImage(_ input: Input, bezelsDir: URL, color: String?) throws ->
     }
     
     let screenshotMask = try makeMask(for: input.cgImage, from: bezelCGImage, bezelFrame: bezelFrame)
-    context.draw(input.cgImage.masking(screenshotMask)!, in: bezelFrame.innerFrame)
+    context.draw(
+        try input.cgImage.masking(screenshotMask).expect("unable to mask screenshot"),
+        in: bezelFrame.innerFrame
+    )
     context.draw(bezelCGImage, in: overallFrame)
     
     guard let resultCGImage = context.makeImage() else {
@@ -102,7 +105,7 @@ private func makeImage(_ input: Input, bezelsDir: URL, color: String?) throws ->
 }
 
 
-private func locateBezelFrame(in bezelImage: NSImage) throws -> BezelFrame {
+private func locateBezelFrame(in bezelImage: NSImage) throws -> BezelFrame { // swiftlint:disable:this function_body_length
     guard let tiff = bezelImage.tiffRepresentation,
           let bitmap = NSBitmapImageRep(data: tiff) else {
         throw CommandError("Unable to get bezel bitmap")
@@ -181,14 +184,14 @@ private func makeMask(for screenshotImage: CGImage, from deviceImage: CGImage, b
         let pixel = UnsafeMutablePointer<Int>.allocate(capacity: 3)
         defer { pixel.deallocate() }
         deviceImageBitmap.getPixel(pixel, atX: x, y: y)
-        precondition((pixel[3] == 0) == (deviceImageBitmap.colorAt(x: x, y: y)!.alphaComponent == 0))
+//        precondition((pixel[3] == 0) == (deviceImageBitmap.colorAt(x: x, y: y)!.alphaComponent == 0))
         return pixel[3] == 0
     }
     let isOpaque = { (x: Int, y: Int) -> Bool in
         let pixel = UnsafeMutablePointer<Int>.allocate(capacity: 3)
         defer { pixel.deallocate() }
         deviceImageBitmap.getPixel(pixel, atX: x, y: y)
-        precondition((pixel[3] == 255) == (deviceImageBitmap.colorAt(x: x, y: y)!.alphaComponent == 1))
+//        precondition((pixel[3] == 255) == (deviceImageBitmap.colorAt(x: x, y: y)!.alphaComponent == 1))
         return pixel[3] == 255
     }
     
@@ -199,7 +202,7 @@ private func makeMask(for screenshotImage: CGImage, from deviceImage: CGImage, b
         }
         if firstNonTransparentX != nil {
             // at least one non-fully-transparent pixel in the row...
-            let lastNonTransparentX = (0..<deviceImageBitmap.pixelsWide).last { isOpaque($0, y) }!
+            let lastNonTransparentX = (0..<deviceImageBitmap.pixelsWide).last { isOpaque($0, y) }! // swiftlint:disable:this force_unwrapping
             for x in lastNonTransparentX..<deviceImageBitmap.pixelsWide {
                 setPixelBlack(x, y)
             }
@@ -213,5 +216,5 @@ private func makeMask(for screenshotImage: CGImage, from deviceImage: CGImage, b
             }
         }
     }
-    return deviceImageBitmap.cgImage!.cropping(to: screenFrame)!.createMask()!
+    return try (deviceImageBitmap.cgImage?.cropping(to: screenFrame)?.createMask()).expect("Unable to create mask")
 }

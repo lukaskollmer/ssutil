@@ -6,11 +6,14 @@
 // SPDX-License-Identifier: MIT
 //
 
+// swiftlint:disable file_types_order
+
 import AppKit
 import CoreGraphics
 import Foundation
 
 
+/// Processing Input
 public struct Input {
     enum Orientation: String {
         case portrait = "Portrait"
@@ -27,6 +30,7 @@ public struct Input {
         cgImage.width < cgImage.height ? .portrait : .landscape
     }
     
+    /// Creates a new `Input` object, for the screenshot at the specified url
     public init(srcUrl: URL) throws {
         self.srcUrl = srcUrl
         self.nsImage = try NSImage(contentsOf: srcUrl).expect("Unable to read NSImage")
@@ -42,7 +46,7 @@ public struct Input {
 }
 
 
-
+/// Where the resulting image should be stored.
 public enum Destination {
     /// The input file should be overwritten in-place
     case inPlace

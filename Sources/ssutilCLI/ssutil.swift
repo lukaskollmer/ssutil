@@ -14,12 +14,8 @@ import SSUtilLib
 
 let logger = Logger(subsystem: "de.lukaskollmer.ssutil", category: "main")
 
-
-extension Device: ExpressibleByArgument {}
-
-
 @main
-struct ssutil: ParsableCommand {
+struct ssutil: ParsableCommand { // swiftlint:disable:this type_name
     @Option(name: .customLong("bezels"), help: "bezel files downloaded from apple")
     var bezelsPath: String
     
@@ -51,9 +47,10 @@ struct ssutil: ParsableCommand {
             } else if let outputDir {
                 .directory(outputDir)
             } else {
-                .file(url
-                    .deletingLastPathComponent()
-                    .appendingPathComponent("\(url.deletingPathExtension().lastPathComponent)+bezel", conformingTo: .png)
+                .file(
+                    url
+                        .deletingLastPathComponent()
+                        .appendingPathComponent("\(url.deletingPathExtension().lastPathComponent)+bezel", conformingTo: .png)
                 )
             }
             do {
@@ -65,3 +62,6 @@ struct ssutil: ParsableCommand {
         }
     }
 }
+
+
+extension Device: ExpressibleByArgument {}

@@ -22,11 +22,21 @@ struct CommandError: Swift.Error {
 }
 
 
+/// A device for which we can apply a bezel
 public enum Device: String, RawRepresentable, CaseIterable {
     case iPhone16 = "iPhone 16"
     case iPhone16Plus = "iPhone 16 Plus"
     case iPhone16Pro = "iPhone 16 Pro"
     case iPhone16ProMax = "iPhone 16 Pro Max"
+    
+    var defaultColor: String {
+        switch self {
+        case .iPhone16, .iPhone16Plus:
+            "Black"
+        case .iPhone16Pro, .iPhone16ProMax:
+            "Black Titanium"
+        }
+    }
     
     public init?(rawValue: String) {
         switch rawValue {
@@ -40,15 +50,6 @@ public enum Device: String, RawRepresentable, CaseIterable {
             self = .iPhone16ProMax
         default:
             return nil
-        }
-    }
-    
-    var defaultColor: String {
-        switch self {
-        case .iPhone16, .iPhone16Plus:
-            "Black"
-        case .iPhone16Pro, .iPhone16ProMax:
-            "Black Titanium"
         }
     }
 }

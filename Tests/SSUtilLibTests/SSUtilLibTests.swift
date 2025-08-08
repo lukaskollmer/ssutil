@@ -20,10 +20,14 @@ struct SSUtilLibTests {
         }
     }
     
+    private func inputFileUrl(named name: String) -> URL? {
+        Bundle.module.url(forResource: name, withExtension: "png")
+    }
+    
     @Test
     func portrait() throws {
         let input = try Input(
-            srcUrl: #require(Bundle.module.url(forResource: "Simulator Screenshot - iPhone 16 Pro Max - 2025-08-07 at 11.47.23", withExtension: "png")),
+            srcUrl: #require(inputFileUrl(named: "Simulator Screenshot - iPhone 16 Pro Max - 2025-08-07 at 11.47.23")),
         )
         let dstUrl = URL.temporaryDirectory.appendingPathComponent(#function, conformingTo: .png)
         try SSUtilLib.process(
