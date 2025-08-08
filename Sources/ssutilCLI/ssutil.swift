@@ -16,7 +16,7 @@ let logger = Logger(subsystem: "de.lukaskollmer.ssutil", category: "main")
 
 @main
 struct ssutil: ParsableCommand { // swiftlint:disable:this type_name
-    @Option(name: .customLong("bezels"), help: "bezel files downloaded from apple")
+    @Option(name: .customLong("bezels"), help: "bezel templates downloaded from apple")
     var bezelsPath: String
     
     @Option(help: "device color")

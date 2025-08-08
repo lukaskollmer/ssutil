@@ -44,7 +44,11 @@ let package = Package(
                 .target(name: "SSUtilLib"),
                 .product(name: "SnapshotTesting", package: "swift-snapshot-testing")
             ],
-            resources: [.process("Resources/inputs"), .copy("Resources/bezels")]
+            resources: [
+                .process("Resources/inputs"),
+                .copy("Resources/bezels"),
+                .process("__Snapshots__")
+            ]
         )
     ]
 )
