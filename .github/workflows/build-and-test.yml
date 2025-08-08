@@ -1,0 +1,38 @@
+#
+# This source file is part of the Stanford Spezi open source project
+#
+# SPDX-FileCopyrightText: 2025 Stanford University and the project authors (see CONTRIBUTORS.md)
+#
+# SPDX-License-Identifier: MIT
+#
+
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: Build-and-Test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package_tests:
+    name: Build and Test Swift Package macOS
+    uses: StanfordBDHG/.github/.github/workflows/xcodebuild-or-fastlane.yml@v2
+    with:
+      scheme: SSUtil
+      destination: 'platform=macOS,name=My Mac'
+      resultBundle: 'SpeziConsent-macOS.xcresult'
+      artifactname: 'SpeziConsent-macOS.xcresult'
+  uploadcoveragereport:
+    name: Upload Coverage Report
+    needs: [package_tests]
+    uses: StanfordBDHG/.github/.github/workflows/create-and-upload-coverage-report.yml@v2
+    with:
+      coveragereports: ssutil-*.xcresult
+    secrets:
+      token: ${{ secrets.CODECOV_TOKEN }}
