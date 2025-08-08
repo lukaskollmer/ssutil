@@ -1,9 +1,9 @@
 //
-//  Utils.swift
-//  ssutil
+// This source file is part of the ssutil open-source project
 //
-//  Created by Lukas Kollmer on 2025-08-08.
-//  Copyright © 2025 Lukas Kollmer. All rights reserved.
+// SPDX-FileCopyrightText: 2025 Lukas Kollmer
+//
+// SPDX-License-Identifier: MIT
 //
 
 import AppKit

@@ -1,0 +1,15 @@
+version = 1
+
+[[annotations]]
+path = [
+    "Tests/SSUtilLibTests/Resources/inputs/**"
+]
+SPDX-FileCopyrightText = "2025 Lukas Kollmer"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = [
+    "Tests/SSUtilLibTests/Resources/bezels**"
+]
+SPDX-FileCopyrightText = "NOASSERTION"
+SPDX-License-Identifier = "NOASSERTION"

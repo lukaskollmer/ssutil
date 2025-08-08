@@ -1,12 +1,11 @@
 // swift-tools-version: 6.1
-// The swift-tools-version declares the minimum version of Swift required to build this package.
 
 //
-//  Package.swift
-//  ssutil
+// This source file is part of the ssutil open-source project
 //
-//  Created by Lukas Kollmer on 2025-08-07.
-//  Copyright © 2025 Lukas Kollmer. All rights reserved.
+// SPDX-FileCopyrightText: 2025 Lukas Kollmer
+//
+// SPDX-License-Identifier: MIT
 //
 
 import PackageDescription
