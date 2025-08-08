@@ -23,7 +23,6 @@ jobs:
   package_tests:
     name: Build and Test Swift Package
     uses: StanfordBDHG/.github/.github/workflows/xcodebuild-or-fastlane.yml@v2
-    if: ${{ false }}
     with:
       scheme: ssutil-Package
       destination: 'platform=macOS,name=My Mac'
