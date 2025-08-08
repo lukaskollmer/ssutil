@@ -24,15 +24,15 @@ jobs:
     name: Build and Test Swift Package macOS
     uses: StanfordBDHG/.github/.github/workflows/xcodebuild-or-fastlane.yml@v2
     with:
-      scheme: SSUtil
+      scheme: SSUtil-Package
       destination: 'platform=macOS,name=My Mac'
-      resultBundle: 'SpeziConsent-macOS.xcresult'
-      artifactname: 'SpeziConsent-macOS.xcresult'
+      resultBundle: 'SSUtil-Package-macOS.xcresult'
+      artifactname: 'SSUtil-Package-macOS.xcresult'
   uploadcoveragereport:
     name: Upload Coverage Report
     needs: [package_tests]
     uses: StanfordBDHG/.github/.github/workflows/create-and-upload-coverage-report.yml@v2
     with:
-      coveragereports: ssutil-*.xcresult
+      coveragereports: SSUtil-Package-macOS.xcresult
     secrets:
       token: ${{ secrets.CODECOV_TOKEN }}
