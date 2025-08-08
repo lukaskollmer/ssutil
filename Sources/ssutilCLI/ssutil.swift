@@ -9,50 +9,10 @@
 import ArgumentParser
 import Foundation
 import OSLog
+import SSUtilLib
 
 
 let logger = Logger(subsystem: "de.lukaskollmer.ssutil", category: "main")
-
-
-struct CommandError: Swift.Error {
-    let message: String
-    
-    init(_ message: String) {
-        self.message = message
-    }
-}
-
-
-enum Device: String, RawRepresentable, CaseIterable, ExpressibleByArgument {
-    case iPhone16 = "iPhone 16"
-    case iPhone16Plus = "iPhone 16 Plus"
-    case iPhone16Pro = "iPhone 16 Pro"
-    case iPhone16ProMax = "iPhone 16 Pro Max"
-    
-    init?(rawValue: String) {
-        switch rawValue {
-        case "iPhone16", "iPhone 16":
-            self = .iPhone16
-        case "iPhone16Plus", "iPhone 16 Plus":
-            self = .iPhone16Plus
-        case "iPhone16Pro", "iPhone 16 Pro":
-            self = .iPhone16Pro
-        case "iPhone16ProMax", "iPhone 16 Pro Max":
-            self = .iPhone16ProMax
-        default:
-            return nil
-        }
-    }
-    
-    var defaultColor: String {
-        switch self {
-        case .iPhone16, .iPhone16Plus:
-            "Black"
-        case .iPhone16Pro, .iPhone16ProMax:
-            "Black Titanium"
-        }
-    }
-}
 
 
 @main
@@ -83,9 +43,19 @@ struct ssutil: ParsableCommand {
     func run() throws {
         for file in files {
             let url = URL(filePath: file, relativeTo: .currentDirectory())
+            let destination: Destination = if inPlace {
+                .inPlace
+            } else if let outputDir {
+                .directory(outputDir)
+            } else {
+                .file(url
+                    .deletingLastPathComponent()
+                    .appendingPathComponent("\(url.deletingPathExtension().lastPathComponent)+bezel", conformingTo: .png)
+                )
+            }
             do {
                 let input = try Input(srcUrl: url)
-                try process(input)
+                try SSUtilLib.process(input, bezelsDir: bezelsDir, color: color, destination: destination)
             } catch {
                 logger.error("Failed to process '\(file)'")
             }

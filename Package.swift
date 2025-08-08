@@ -16,18 +16,26 @@ let package = Package(
     platforms: [
         .macOS(.v15)
     ],
+    products: [
+        .executable(name: "ssutil", targets: ["ssutilCLI"]),
+        .library(name: "SSUtilLib", targets: ["SSUtilLib"])
+    ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.6.1"),
         .package(url: "https://github.com/apple/swift-algorithms.git", from: "1.2.1"),
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
-        .executableTarget(
-            name: "ssutil",
+        .target(
+            name: "SSUtilLib",
             dependencies: [
-                .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "Algorithms", package: "swift-algorithms")
+            ]
+        ),
+        .executableTarget(
+            name: "ssutilCLI",
+            dependencies: [
+                .target(name: "SSUtilLib"),
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]
         ),
     ]
