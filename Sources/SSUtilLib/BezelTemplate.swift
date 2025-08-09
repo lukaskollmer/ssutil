@@ -1,0 +1,212 @@
+//
+// This source file is part of the ssutil open-source project
+//
+// SPDX-FileCopyrightText: 2025 Lukas Kollmer
+//
+// SPDX-License-Identifier: MIT
+//
+
+
+import Algorithms
+import AppKit
+import CoreGraphics
+import Foundation
+
+
+struct BezelFrame {
+    let canvasSize: CGSize
+    let top: ClosedRange<Int>
+    let bottom: ClosedRange<Int>
+    let left: ClosedRange<Int>
+    let right: ClosedRange<Int>
+    
+    /// The frame representing the device image's transparent inner region
+    var innerFrame: CGRect {
+        CGRect(
+            x: left.upperBound + 1,
+            y: top.upperBound + 1,
+            width: right.lowerBound - left.upperBound - 1,
+            height: bottom.lowerBound - top.upperBound - 1
+        )
+    }
+    
+    init(canvasSize: CGSize, top: ClosedRange<Int>, bottom: ClosedRange<Int>, left: ClosedRange<Int>, right: ClosedRange<Int>) {
+        self.canvasSize = canvasSize
+        self.top = top
+        self.bottom = bottom
+        self.left = left
+        self.right = right
+    }
+}
+
+
+final class BezelTemplate: @unchecked Sendable {
+    struct DeviceInfo: Hashable, Sendable {
+        let device: Device
+        let color: String
+        let orientation: Orientation
+    }
+    
+    let fileUrl: URL
+    let deviceInfo: DeviceInfo
+    let image: NSImage
+    let cgImage: CGImage
+    let bezelFrame: BezelFrame
+    let maskImage: CGImage
+    
+    private init(deviceInfo: DeviceInfo, bezelsDir: URL) throws {
+        self.fileUrl = bezelsDir
+            .appending(component: deviceInfo.device.rawValue)
+            .appendingPathComponent("\(deviceInfo.device.rawValue) - \(deviceInfo.color) - \(deviceInfo.orientation.rawValue)", conformingTo: .png)
+        self.deviceInfo = deviceInfo
+        self.image = try NSImage(contentsOf: fileUrl).expect("Unable to read NSImage")
+        self.cgImage = try image.cgImage(forProposedRect: nil, context: nil, hints: nil).expect("Unable to create CGImage")
+        self.bezelFrame = try Self.locateBezelFrame(in: image)
+        self.maskImage = try Self.makeMask(from: cgImage, bezelFrame: bezelFrame)
+    }
+    
+    
+    private static func parseDeviceInfo(from fileUrl: URL) -> DeviceInfo? {
+        guard fileUrl.pathExtension == "png" else {
+            return nil
+        }
+        let components = fileUrl.deletingPathExtension().lastPathComponent.components(separatedBy: " - ")
+        guard components.count == 3 else {
+            return nil
+        }
+        guard let device = Device(rawValue: components[0]), let orientation = Orientation(rawValue: components[2]) else {
+            return nil
+        }
+        return .init(device: device, color: components[1], orientation: orientation)
+    }
+}
+
+
+extension BezelTemplate {
+    @MainActor private static var cache: [DeviceInfo: BezelTemplate] = [:]
+    
+    @MainActor
+    static func `for`(deviceInfo: DeviceInfo, bezelsDir: URL) throws -> BezelTemplate {
+        if let template = cache[deviceInfo] {
+            return template
+        } else {
+            let template = try BezelTemplate(deviceInfo: deviceInfo, bezelsDir: bezelsDir)
+            cache[deviceInfo] = template
+            return template
+        }
+    }
+}
+
+
+extension BezelTemplate {
+    private static func locateBezelFrame(in bezelImage: NSImage) throws -> BezelFrame { // swiftlint:disable:this function_body_length
+        guard let tiff = bezelImage.tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: tiff) else {
+            throw CommandError("Unable to get bezel bitmap")
+        }
+        guard let pixelData = bitmap.bitmapData else {
+            throw CommandError("Unable to get bezel bitmap data")
+        }
+        let width = bitmap.pixelsWide
+        let height = bitmap.pixelsHigh
+        let bytesPerRow = bitmap.bytesPerRow
+        let samplesPerPixel = bitmap.samplesPerPixel
+        
+        func offset(forX x: Int, y: Int) -> Int {
+            y * bytesPerRow + x * samplesPerPixel
+        }
+        
+        /// The alpha value at the specifed location, with `0` being fully transparent and `255` fully opaque
+        func alpha(atX x: Int, y: Int) -> UInt8 {
+            let offset = offset(forX: x, y: y)
+            let alpha = pixelData[offset + samplesPerPixel - 1]
+            return alpha
+        }
+        
+        let middleX = width / 2
+        let middleY = height / 2
+        
+        let topStart = (0..<height).adjacentPairs().first { y0, y1 in
+            alpha(atX: middleX, y: y0) == 0 && alpha(atX: middleX, y: y1) != 0
+        }?.1
+        let topEnd = (0..<height).adjacentPairs().first { y0, y1 in
+            alpha(atX: middleX, y: y0) != 0 && alpha(atX: middleX, y: y1) == 0
+        }?.0
+        let bottomStart = (0..<height).adjacentPairs().last { y0, y1 in
+            alpha(atX: middleX, y: y0) == 0 && alpha(atX: middleX, y: y1) != 0
+        }?.1
+        let bottomEnd = (0..<height).adjacentPairs().last { y0, y1 in
+            alpha(atX: middleX, y: y0) != 0 && alpha(atX: middleX, y: y1) == 0
+        }?.0
+        let leftStart = (0..<width).adjacentPairs().first { x0, x1 in
+            alpha(atX: x0, y: middleY) == 0 && alpha(atX: x1, y: middleY) != 0
+        }?.1
+        let leftEnd = (0..<width).adjacentPairs().first { x0, x1 in
+            alpha(atX: x0, y: middleY) != 0 && alpha(atX: x1, y: middleY) == 0
+        }?.0
+        let rightStart = (0..<width).adjacentPairs().last { x0, x1 in
+            alpha(atX: x0, y: middleY) == 0 && alpha(atX: x1, y: middleY) != 0
+        }?.1
+        let rightEnd = (0..<width).adjacentPairs().last { x0, x1 in
+            alpha(atX: x0, y: middleY) != 0 && alpha(atX: x1, y: middleY) == 0
+        }?.0
+        
+        guard let topStart, let topEnd, let bottomStart, let bottomEnd, let leftStart, let leftEnd, let rightStart, let rightEnd else {
+            throw CommandError("Unable to determine bezel rect")
+        }
+        
+        return .init(
+            canvasSize: CGSize(width: width, height: height),
+            top: topStart...topEnd,
+            bottom: bottomStart...bottomEnd,
+            left: leftStart...leftEnd,
+            right: rightStart...rightEnd
+        )
+    }
+
+    
+    private static func makeMask(from deviceImage: CGImage, bezelFrame: BezelFrame) throws -> CGImage {
+        let screenFrame = bezelFrame.innerFrame
+        let deviceImageBitmap = NSBitmapImageRep(cgImage: deviceImage)
+        
+        let setPixelBlack = { (x: Int, y: Int) in
+            var blackPixel = [0, 0, 0, 255]
+            deviceImageBitmap.setPixel(&blackPixel, atX: x, y: y)
+        }
+        let isTransparent = { (x: Int, y: Int) -> Bool in
+            let pixel = UnsafeMutablePointer<Int>.allocate(capacity: 3)
+            defer { pixel.deallocate() }
+            deviceImageBitmap.getPixel(pixel, atX: x, y: y)
+            return pixel[3] == 0
+        }
+        let isOpaque = { (x: Int, y: Int) -> Bool in
+            let pixel = UnsafeMutablePointer<Int>.allocate(capacity: 3)
+            defer { pixel.deallocate() }
+            deviceImageBitmap.getPixel(pixel, atX: x, y: y)
+            return pixel[3] == 255
+        }
+        
+        for y in 0..<deviceImageBitmap.pixelsHigh {
+            let firstNonTransparentX = (0..<deviceImageBitmap.pixelsWide).first { isOpaque($0, y) }
+            for x in 0..<(firstNonTransparentX ?? deviceImageBitmap.pixelsWide) {
+                setPixelBlack(x, y)
+            }
+            if firstNonTransparentX != nil {
+                // at least one non-fully-transparent pixel in the row...
+                let lastNonTransparentX = (0..<deviceImageBitmap.pixelsWide).last { isOpaque($0, y) }! // swiftlint:disable:this force_unwrapping
+                for x in lastNonTransparentX..<deviceImageBitmap.pixelsWide {
+                    setPixelBlack(x, y)
+                }
+            }
+            // get rid of the notch
+            if let firstTransparentX = (0..<deviceImageBitmap.pixelsWide).first(where: { isTransparent($0, y) }),
+               let lastTransparentX = (0..<deviceImageBitmap.pixelsWide).last(where: { isTransparent($0, y) }) {
+                for x in firstTransparentX..<lastTransparentX {
+                    var pixel = [0, 0, 0, 0]
+                    deviceImageBitmap.setPixel(&pixel, atX: x, y: y)
+                }
+            }
+        }
+        return try (deviceImageBitmap.cgImage?.cropping(to: screenFrame)?.createMask()).expect("Unable to create mask")
+    }
+}

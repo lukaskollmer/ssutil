@@ -7,10 +7,6 @@
 //
 
 import Foundation
-import OSLog
-
-
-let logger = Logger(subsystem: "de.lukaskollmer.ssutil", category: "main")
 
 
 struct CommandError: Swift.Error {
@@ -23,7 +19,7 @@ struct CommandError: Swift.Error {
 
 
 /// A device for which we can apply a bezel
-public enum Device: String, RawRepresentable, CaseIterable {
+public enum Device: String, RawRepresentable, CaseIterable, Sendable {
     case iPhone16 = "iPhone 16"
     case iPhone16Plus = "iPhone 16 Plus"
     case iPhone16Pro = "iPhone 16 Pro"
