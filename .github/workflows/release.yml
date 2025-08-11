@@ -50,7 +50,7 @@ jobs:
   homebrew-release:
     runs-on: ubuntu-latest
     name: Release to Homebrew
-    if: ${{ github.event.action == 'published' }}
+    # if: ${{ github.event.action == 'published' }}
     steps:
       - name: Release project to Homebrew tap
         uses: Justintime50/homebrew-releaser@v2
