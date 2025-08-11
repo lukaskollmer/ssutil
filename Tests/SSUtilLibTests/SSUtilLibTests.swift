@@ -25,18 +25,16 @@ struct SSUtilLibTests {
     }
     
     @Test
-    func portrait() throws {
+    func portrait() async throws {
         let input = try Input(
             srcUrl: #require(inputFileUrl(named: "Simulator Screenshot - iPhone 16 Pro Max - 2025-08-07 at 11.47.23")),
         )
-        let dstUrl = URL.temporaryDirectory.appendingPathComponent(#function, conformingTo: .png)
-        try SSUtilLib.process(
+        let result = try await SSUtilLib.makeImage(
             input,
             bezelsDir: try bezelsDir,
-            color: nil,
-            destination: .file(dstUrl)
+            defaultDevice: nil,
+            color: nil
         )
-        let result = try #require(NSImage(contentsOf: dstUrl))
         assertSnapshot(of: result, as: .image)
     }
 }

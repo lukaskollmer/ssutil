@@ -29,6 +29,10 @@ let package = Package(
             name: "SSUtilLib",
             dependencies: [
                 .product(name: "Algorithms", package: "swift-algorithms")
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("ExistentialAny"),
+                .enableUpcomingFeature("InternalImportsByDefault")
             ]
         ),
         .executableTarget(
@@ -36,6 +40,10 @@ let package = Package(
             dependencies: [
                 .target(name: "SSUtilLib"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("ExistentialAny"),
+                .enableUpcomingFeature("InternalImportsByDefault")
             ]
         ),
         .testTarget(
@@ -48,6 +56,10 @@ let package = Package(
                 .process("Resources/inputs"),
                 .copy("Resources/bezels"),
                 .process("__Snapshots__")
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("ExistentialAny"),
+                .enableUpcomingFeature("InternalImportsByDefault")
             ]
         )
     ]

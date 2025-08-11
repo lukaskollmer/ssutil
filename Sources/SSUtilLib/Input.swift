@@ -10,21 +10,22 @@
 
 import AppKit
 import CoreGraphics
-import Foundation
+public import Foundation
+
+
+enum Orientation: String, Hashable, Sendable, CaseIterable {
+    case portrait = "Portrait"
+    case landscape = "Landscape"
+}
 
 
 /// Processing Input
 public struct Input {
-    enum Orientation: String {
-        case portrait = "Portrait"
-        case landscape = "Landscape"
-    }
-    
     let srcUrl: URL
     let nsImage: NSImage
     let cgImage: CGImage
 //    let bezelFrame: BezelFrame
-    let device: Device
+    let device: Device?
     
     var orientation: Orientation {
         cgImage.width < cgImage.height ? .portrait : .landscape
@@ -35,12 +36,15 @@ public struct Input {
         self.srcUrl = srcUrl
         self.nsImage = try NSImage(contentsOf: srcUrl).expect("Unable to read NSImage")
         self.cgImage = try nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil).expect("Unable to create CGImage")
-        self.device = try Self.extractDevice(from: srcUrl).expect("Unable to parse device type from input filename")
+        self.device = Self.extractDevice(from: srcUrl)
     }
     
     private static func extractDevice(from url: URL) -> Device? {
         let filename = url.lastPathComponent
         let filenameComponents = filename.split(separator: " - ")
+        guard filenameComponents.count >= 2 else {
+            return nil
+        }
         return Device(rawValue: String(filenameComponents[1]))
     }
 }
