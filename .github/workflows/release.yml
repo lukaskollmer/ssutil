@@ -76,7 +76,7 @@ jobs:
 
           # Install command for your formula.
           # Required - string
-          install: 'bin.install ssutil'
+          install: 'bin.install "ssutil"'
 
           # Test command for your formula, used for `brew test`.
           # Optional - string
@@ -146,7 +146,7 @@ jobs:
 
           # Skips committing the generated formula to a homebrew tap (useful to verify results on a first run).
           # Default is shown - boolean
-          skip_commit: true
+          skip_commit: false
 
           # Logs debugging info to console.
           # Default is shown - boolean
