@@ -14,20 +14,16 @@ place iOS simulator screenshots in device bezels
 ## Installing
 
 ```bash
-$ git clone https://github.com/lukaskollmer/ssutil
-$ cd ssutil
-$ swift build -c release --product ssutil
+brew install lukaskollmer/formulae/ssutil
 ```
-The compiled binary is at `.build/release/ssutil`.
+
+## Usage
 
 > [!IMPORTANT]  
 > `ssutil` isn't (yet) able to download the bezel templates from Apple on its own.
-> Before you first use `ssutil`, uou'll need to [download the bezel files from Apple][apple-bezels],
+> Before you first use `ssutil`, you'll need to [download the bezel files from Apple][apple-bezels],
 > and place them in a folder somewhere in your file system.
 > You can then use the `--bezels` option to tell `ssutil` where the bezel templates are.
-
-
-## Usage
 
 ```
 USAGE: ssutil --bezels <bezels> [--color <color>] [--in-place] [--output <output>] [<files> ...]
