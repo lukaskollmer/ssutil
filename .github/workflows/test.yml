@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: MIT
 #
 
-name: Build and Test
+name: Test
 
 on:
   push:
@@ -16,16 +16,16 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: Build-and-Test-${{ github.ref }}
+  group: Test-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   package_tests:
-    name: Build and Test Swift Package
+    name: Package Tests
     uses: StanfordBDHG/.github/.github/workflows/xcodebuild-or-fastlane.yml@v2
     with:
       scheme: ssutil-Package
-      destination: 'platform=macOS,name=My Mac'
+      destination: 'platform=macOS,arch=arm64'
       resultBundle: 'ssutil-Package-macOS.xcresult'
       artifactname: 'ssutil-Package-macOS.xcresult'
   uploadcoveragereport:
